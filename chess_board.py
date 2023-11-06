@@ -46,7 +46,7 @@ def create_game(fen, moves):
         board.push(chess.Move.from_uci(moves[move_index]))
         print()
         print('Opponent\'s move: ' + moves[move_index])
-        print(board)
+        print(board.unicode())
 
         move_index += 1
 
