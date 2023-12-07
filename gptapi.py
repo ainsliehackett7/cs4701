@@ -43,6 +43,5 @@ def promptgpt():
         if x in terms:
             results.append(x)
     return results
-
-
+    
 # print(promptgpt())
