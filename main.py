@@ -4,6 +4,7 @@ from play import create_game, play_ai_game
 import evaluate_ai  # Import your AI evaluation module
 import random
 
+
 def main():
     print("1. Play Puzzle")
     print("2. Watch AI Play")
@@ -29,7 +30,9 @@ def main():
 
     elif choice == '3':
         # AI Evaluation and Graph Generation
-        evaluate_ai.run_evaluation_and_plot()  # Assuming such a function exists in evaluate_ai.py
+        # Assuming such a function exists in evaluate_ai.py
+        evaluate_ai.run_evaluation_and_plot()
+
 
 def find_puzzle_ai(is_text=False):
     puzzles = evaluate_ai.get_database()
@@ -41,6 +44,7 @@ def find_puzzle_ai(is_text=False):
     moves = puzzle["Moves"].split()
     fen = puzzle["FEN"]
     return fen, moves
+
 
 def query(puzzles, terms):
     weighted_puzzles = []
@@ -57,7 +61,8 @@ def query(puzzles, terms):
     if weighted_puzzles:
         return random.choice(weighted_puzzles)
     else:
-        return random.choice(puzzles)  # Return a random puzzle if no matches found
+        # Return a random puzzle if no matches found
+        return random.choice(puzzles)
 
 
 def find_puzzle():
@@ -65,8 +70,8 @@ def find_puzzle():
     terms = gptapi.promptgpt()
     print(terms)
 
-    #df=pd.read_csv(file)
-    #preprocess.preprocess(df)
+    # df=pd.read_csv(file)
+    # preprocess.preprocess(df)
 
     with open(file, 'r') as csvfile:
         csvreader = csv.reader(csvfile)
@@ -93,9 +98,11 @@ def find_puzzle():
         fen = csvreader[current_index][1]
 
         print(fen)
+        print(moves)
 
         create_game(fen, moves)
 
         return 'Puzzle Exited'
+
 
 main()

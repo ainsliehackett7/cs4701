@@ -26,14 +26,14 @@ def prompt_move(board, expected_move_str):
   return next_move
 
 def play_ai_game(board, moves, ai_type, max_time):
-  print(board)
+  print(board.unicode())
 
   uci_move = chess.Move.from_uci(moves[0])
   board.push(uci_move)
 
   print()
   print('Opponent\'s move: ' + moves[0])
-  print(board)
+  print(board.unicode())
 
   # Game loop
   move_index = 1
@@ -59,7 +59,7 @@ def play_ai_game(board, moves, ai_type, max_time):
     if not best_move or best_move not in board.legal_moves:
       print(f"AI's move: {best_move}, Time taken: {move_time:.2f} seconds")
       print("AI cannot move?")
-      print(board)
+      print(board.unicode())
       # Calculate and print the average time per move
       avg_move_time = total_move_time / move_index if move_index > 0 else 0
       print(f'AI FAILED, error?? Average time per move: {avg_move_time:.2f} seconds')
@@ -67,7 +67,7 @@ def play_ai_game(board, moves, ai_type, max_time):
     
     board.push(best_move)
     print(f"AI's move: {best_move}, Time taken: {move_time:.2f} seconds")
-    print(board)
+    print(board.unicode())
 
     # Check if correct move was made
     if (moves[move_index] != str(best_move)):
@@ -92,14 +92,17 @@ def create_game(fen, moves, play_mode="human", ai_type=None, max_time=10):
     play_ai_game(board, moves, ai_type, max_time)
 
 def play_human_game(board, moves):
-  print(board)
+  
+  
+  print(board.unicode())
+  chess.svg.board(board)
 
   uci_move = chess.Move.from_uci(moves[0])
   board.push(uci_move)
 
   print()
   print('Opponent\'s move: ' + moves[0])
-  print(board)
+  print(board.unicode())
 
   move_index = 1
 
@@ -107,7 +110,7 @@ def play_human_game(board, moves):
     board.push(prompt_move(board, moves[move_index]))
     print()
     print('Your move: ' + moves[move_index])
-    print(board)
+    print(board.unicode())
 
     move_index += 1
     if (move_index >= len(moves)):
@@ -117,7 +120,7 @@ def play_human_game(board, moves):
     board.push(chess.Move.from_uci(moves[move_index]))
     print()
     print('Opponent\'s move: ' + moves[move_index])
-    print(board)
+    print(board.unicode())
 
     move_index += 1
 

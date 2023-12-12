@@ -1,5 +1,6 @@
 import chess
 
+
 class ChessBoard(chess.Board):
     def __init__(self, fen=None):
         super().__init__(fen=fen)  # Call the constructor of the parent class
@@ -11,12 +12,14 @@ class ChessBoard(chess.Board):
         bitboards = {}
         for color in [chess.WHITE, chess.BLACK]:
             for piece_type in [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN, chess.KING]:
-                bitboards[(piece_type, color)] = self.get_bitboard(piece_type, color)
+                bitboards[(piece_type, color)] = self.get_bitboard(
+                    piece_type, color)
         return bitboards
-    
+
     def display(self):
         # Custom display logic
         print(self.board)
+
 
 '''
     def push(self, move):

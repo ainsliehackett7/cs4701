@@ -20,7 +20,6 @@ def terms_list(file_path):
                         unique_openings.append(word)
 
     return [unique_terms, unique_openings]
-
 # file = "data/lichess_db_puzzle.csv"
 # info = terms_list(file)
 # print("Terms/Themes: ")

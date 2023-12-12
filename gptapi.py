@@ -18,7 +18,8 @@ def promptgpt():
                 instruct}]
 
     while True:
-        message = input("User : ")
+        print("Tell a LLM what kind of chess puzzle you would like")
+        message = input("User: ")
         if message:
             messages.append(
                 {"role": "user", "content": message},
