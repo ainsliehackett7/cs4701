@@ -1,6 +1,6 @@
 import chess
 from constants import PAWN_VALUE, KNIGHT_VALUE, BISHOP_VALUE, ROOK_VALUE, QUEEN_VALUE
-from constants import PAWN_TABLE, KNIGHT_TABLE, BISHOP_TABLE, WHITE_SQUARES_MASK, BLACK_SQUARES_MASK
+from constants import PAWN_TABLE, KNIGHT_TABLE, BISHOP_TABLE
 from constants import ROOK_TABLE, QUEEN_TABLE, KING_TABLE, DRAW_VALUE
 from stockfish import Stockfish
 
@@ -26,20 +26,13 @@ def material_count(board):
         score += piece_values[piece_type] * (len(white_pieces) - len(black_pieces))
     return score
 
-# MATERIAL VALUE EVALUATION
-def material_value(board):
-    return PAWN_VALUE * (board.piece_type_count(chess.PAWN, chess.WHITE) - board.piece_type_count(chess.PAWN, chess.BLACK)) + \
-              KNIGHT_VALUE * (board.piece_type_count(chess.KNIGHT, chess.WHITE) - board.piece_type_count(chess.KNIGHT, chess.BLACK)) + \
-                BISHOP_VALUE * (board.piece_type_count(chess.BISHOP, chess.WHITE) - board.piece_type_count(chess.BISHOP, chess.BLACK)) + \
-                    ROOK_VALUE * (board.piece_type_count(chess.ROOK, chess.WHITE) - board.piece_type_count(chess.ROOK, chess.BLACK)) + \
-                        QUEEN_VALUE * (board.piece_type_count(chess.QUEEN, chess.WHITE) - board.piece_type_count(chess.QUEEN, chess.BLACK))
-
 # SQUARE CONTROL EVALUATION
 def evaluate_square_control(board):
     weakening_values = dynamic_weakening(board)
     reinforcement_values = dynamic_reinforcement(board)
     combined_control_values = [w + r for w, r in zip(weakening_values, reinforcement_values)]
-    return combined_control_values
+    control_score = sum(combined_control_values)
+    return control_score
 
 def dynamic_weakening(board):
     square_values = [0] * 64
@@ -60,41 +53,38 @@ def dynamic_reinforcement(board):
 
 # PIECE POSITION EVALUATION
 def piece_position_evaluation(board):
-    total_eval = 0
+    control_score = 0
 
     for square in chess.SQUARES:
         piece = board.piece_at(square)
         if piece:
+            row, col = divmod(square, 8)
             piece_type = piece.piece_type
             piece_color = piece.color
-            row, col = divmod(square, 8)
 
-            # Determine the piece's base value and its position value from the table
             if piece_type == chess.PAWN:
                 piece_value = PAWN_TABLE[row][col]
             elif piece_type == chess.KNIGHT:
                 piece_value = KNIGHT_TABLE[row][col]
             elif piece_type == chess.BISHOP:
                 piece_value = BISHOP_TABLE[row][col]
-                # Apply mask if you want to differentiate between white and black square bishops
-                if piece_color == chess.WHITE and not (WHITE_SQUARES_MASK & (1 << square)):
-                    piece_value = 0
-                elif piece_color == chess.BLACK and not (BLACK_SQUARES_MASK & (1 << square)):
-                    piece_value = 0
             elif piece_type == chess.ROOK:
                 piece_value = ROOK_TABLE[row][col]
             elif piece_type == chess.QUEEN:
                 piece_value = QUEEN_TABLE[row][col]
             elif piece_type == chess.KING:
                 piece_value = KING_TABLE[row][col]
-
-            # Adjust the total evaluation based on the color of the piece
-            if piece_color == chess.WHITE:
-                total_eval += piece_value
             else:
-                total_eval -= piece_value
+                continue
 
-    return total_eval
+            # Adjust the total control score based on the color of the piece
+            if piece_color == chess.WHITE:
+                control_score += piece_value
+            else:
+                control_score -= piece_value
+
+    return control_score
+
 
 # PAWN STRUCTURE EVALUATION
 def count_doubled_pawns(board, color):
@@ -137,30 +127,40 @@ def king_safety_evaluation(board):
 def evaluate_king_shield(board, color):
     king_square = board.king(color)
     king_shield_penalty = 0
-
-    # Define ranges to check for pawns around the king
     pawn_shield_files = range(max(0, king_square % 8 - 1), min(8, king_square % 8 + 2))
     pawn_shield_ranks = [king_square // 8, king_square // 8 + (1 if color == chess.WHITE else -1)]
-
-    # Evaluate the pawn shield
+    pawn_shield_ranks = [r for r in pawn_shield_ranks if 0 <= r <= 7]
     for file in pawn_shield_files:
         for rank in pawn_shield_ranks:
             if not board.piece_at(chess.square(file, rank)) == chess.Piece(chess.PAWN, color):
-                king_shield_penalty -= 5  # Penalty for missing pawn shield
+                king_shield_penalty -= 1
 
     return king_shield_penalty
 
 # EVALUATE BOARD
 def evaluate_board(board, scheme='material_count'):
-    
-    return simple_evaluation(board)
-    '''
-    total_evaluation = 0
-    total_evaluation += material_count(board)
-    total_evaluation += piece_position_evaluation(board)
-    # Add other evaluation functions as they are implemented
-    return total_evaluation
-    '''
+    if scheme == 'king_safety':
+        evaluation = simple_evaluation(board)
+        evaluation += king_safety_evaluation(board)
+    elif scheme == 'piece_position':
+        evaluation = simple_evaluation(board)
+        evaluation += piece_position_evaluation(board)
+    elif scheme == 'square_control':
+        evaluation = simple_evaluation(board)
+        evaluation += evaluate_square_control(board)
+    elif scheme == 'pawn_structure':
+        evaluation = simple_evaluation(board)
+        evaluation += pawn_structure_evaluation(board)
+    elif scheme == 'combined':
+        evaluation = simple_evaluation(board)
+        evaluation += king_safety_evaluation(board)
+        evaluation += piece_position_evaluation(board)
+        evaluation += evaluate_square_control(board)
+        evaluation += pawn_structure_evaluation(board)
+    else:
+        evaluation = simple_evaluation(board)
+        
+    return evaluation
 
 # SIMPLE EVAL -- MATERIAL COUNT
 

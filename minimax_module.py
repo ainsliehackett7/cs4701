@@ -3,19 +3,19 @@ import time
 from board_evaluation_functions import evaluate_board
 
 
-def minimax_search(board, alpha, beta, depth):
+def minimax_search(board, alpha, beta, depth, scheme):
   if board.is_checkmate():
     return -float('inf') if board.turn == chess.WHITE else float('inf')
   if board.is_stalemate() or board.is_insufficient_material():
     return 0
   if depth == 0:
-    return evaluate_board(board)
+    return evaluate_board(board, scheme=scheme)
   
   if board.turn == chess.WHITE:
     max_score = -float('inf')
     for move in board.legal_moves:
       board.push(move)
-      score = minimax_search(board, alpha, beta, depth - 1)
+      score = minimax_search(board, alpha, beta, depth - 1, scheme)
       max_score = max(max_score, score)
       board.pop()
       alpha = max(alpha, score)
@@ -26,7 +26,7 @@ def minimax_search(board, alpha, beta, depth):
     min_score = float('inf')
     for move in board.legal_moves:
       board.push(move)
-      score = minimax_search(board, alpha, beta, depth - 1)
+      score = minimax_search(board, alpha, beta, depth - 1, scheme)
       min_score = min(min_score, score)
       board.pop()
       beta = min(beta, score)
@@ -34,7 +34,7 @@ def minimax_search(board, alpha, beta, depth):
         break
     return min_score
 
-def find_best_move(board, max_depth=4, time_limit=None):
+def find_best_move(board, max_depth=4, time_limit=None, scheme='material_count'):
   best_move = None
   start_time = time.time()
 
@@ -42,7 +42,7 @@ def find_best_move(board, max_depth=4, time_limit=None):
     best_eval = -float('inf') if board.turn == chess.WHITE else float('inf')
     for move in board.legal_moves:
       board.push(move)
-      score = minimax_search(board, -float('inf'), float('inf'), depth - 1)
+      score = minimax_search(board, -float('inf'), float('inf'), depth - 1, scheme)
       board.pop()
 
       if board.turn == chess.WHITE and score > best_eval:

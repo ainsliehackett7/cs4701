@@ -16,7 +16,7 @@ class Node:
 
   def select_child(self):
     """ Select a child node with the highest UCB1 value. """
-    c = 1.4  # Exploration parameter (0.5 to 2, adjust based on performance)
+    c = 1.41  # Exploration parameter starts at \sqrt{2} -- common for 2-player games like chess
     best_value = -float('inf')
     best_node = None
     for child in self.children:
@@ -35,14 +35,14 @@ class Node:
     self.untried_moves.remove(move)
     return new_node
 
-def simulate_game_with_evaluation(node, board):
+def simulate_game_with_evaluation(node, board, scheme):
   while not board.is_game_over():
     best_move = None
     best_eval = -float('inf') if board.turn == chess.WHITE else float('inf')
 
     for move in board.legal_moves:
       board.push(move)
-      evaluation = evaluate_board(board)  # Use your evaluation function
+      evaluation = evaluate_board(board, scheme=scheme)
       if (board.turn == chess.WHITE and evaluation > best_eval) or \
         (board.turn == chess.BLACK and evaluation < best_eval):
           best_eval = evaluation
@@ -57,11 +57,11 @@ def simulate_game_with_evaluation(node, board):
     board.push(best_move if best_move else random.choice(list(board.legal_moves)))
 
 
-def select_best_move(board, max_time=None):
+def select_best_move(board, max_time=None, scheme='material_count'):
   root = Node(board=board)
   start_time = time.time()
 
-  while True: # Number of simulations (adjust based on performance)
+  while 1000: # Number of simulations (adjust based on performance)
     node = root
     simulation_board = board.copy()
 
@@ -79,7 +79,7 @@ def select_best_move(board, max_time=None):
       simulation_board.push(move)
 
     # Simulation - From a new node, simulate a random game and get the result
-    simulate_game_with_evaluation(node, simulation_board)
+    simulate_game_with_evaluation(node, simulation_board, scheme)
 
     # Back Propagation - Update the node and its ancestors with the result of the simulation
     while node is not None:
