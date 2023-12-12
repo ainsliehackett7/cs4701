@@ -2,7 +2,7 @@ import chess
 import random
 import math
 import time
-from evaluation import evaluate_board
+from board_evaluation_functions import evaluate_board
 
 class Node:
   def __init__(self, move=None, parent=None, board=None):
@@ -16,7 +16,7 @@ class Node:
 
   def select_child(self):
     """ Select a child node with the highest UCB1 value. """
-    c = 1.41  # Exploration parameter (0.5 to 2, adjust based on performance)
+    c = 1.4  # Exploration parameter (0.5 to 2, adjust based on performance)
     best_value = -float('inf')
     best_node = None
     for child in self.children:
@@ -43,6 +43,10 @@ def simulate_game_with_evaluation(node, board):
     for move in board.legal_moves:
       board.push(move)
       evaluation = evaluate_board(board)  # Use your evaluation function
+      if (board.turn == chess.WHITE and evaluation > best_eval) or \
+        (board.turn == chess.BLACK and evaluation < best_eval):
+          best_eval = evaluation
+          best_move = move
       board.pop()
 
     if (board.turn == chess.WHITE and evaluation > best_eval) or \
@@ -81,9 +85,19 @@ def select_best_move(board, max_time=None):
     while node is not None:
       node.visits += 1
       if simulation_board.result() == '1-0':
-        node.wins += 1 if simulation_board.turn == chess.WHITE else 0
+        # Increase win count for White
+        temp_node = node
+        while temp_node is not None:
+          if temp_node.board.turn == chess.WHITE:
+            temp_node.wins += 1
+          temp_node = temp_node.parent
       elif simulation_board.result() == '0-1':
-        node.wins += 1 if simulation_board.turn == chess.BLACK else 0
+          # Increase win count for Black
+          temp_node = node
+          while temp_node is not None:
+            if temp_node.board.turn == chess.BLACK:
+              temp_node.wins += 1
+            temp_node = temp_node.parent
       node = node.parent
     
     # If time limit exceeded, break the loop

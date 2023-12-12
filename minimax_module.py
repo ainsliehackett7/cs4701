@@ -1,10 +1,14 @@
 import chess
 import time
-from evaluation import evaluate_board
+from board_evaluation_functions import evaluate_board
 
 
 def minimax_search(board, alpha, beta, depth):
-  if depth == 0 or board.is_game_over():
+  if board.is_checkmate():
+    return -float('inf') if board.turn == chess.WHITE else float('inf')
+  if board.is_stalemate() or board.is_insufficient_material():
+    return 0
+  if depth == 0:
     return evaluate_board(board)
   
   if board.turn == chess.WHITE:
@@ -30,7 +34,7 @@ def minimax_search(board, alpha, beta, depth):
         break
     return min_score
 
-def find_best_move(board, max_depth, time_limit=None):
+def find_best_move(board, max_depth=4, time_limit=None):
   best_move = None
   start_time = time.time()
 

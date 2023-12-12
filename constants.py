@@ -1,10 +1,9 @@
 # piece values
 PAWN_VALUE = 100
 KNIGHT_VALUE = 320
-BISHOP_VALUE = 330 # For both B-square bishops and W-square bishops
+BISHOP_VALUE = 330
 ROOK_VALUE = 500
-QUEEN_VALUE = 900
-KING_VALUE = 20000
+QUEEN_VALUE = 950
 
 # Pawn favors opposite side of board (closer to promotion)
 PAWN_TABLE = [
@@ -79,7 +78,9 @@ KING_TABLE = [
 ]
 
 # Masks for black and white squares for bishop colors
-WHITE_SQUARES_MASK = 0xAA55AA55AA55AA55
-BLACK_SQUARES_MASK = 0x55AA55AA55AA55AA
+BLACK_SQUARES_MASK = 0xAA55AA55AA55AA55
+WHITE_SQUARES_MASK = 0x55AA55AA55AA55AA
+
+DRAW_VALUE = 0
 #BLACK_SQUARES_MASK = sum(1 << i for i in range(64) if (i % 2 == 0) ^ (i // 8 % 2 == 0))
 #WHITE_SQUARES_MASK = sum(1 << i for i in range(64) if (i % 2 != 0) ^ (i // 8 % 2 == 0))

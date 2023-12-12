@@ -45,7 +45,7 @@ def play_ai_game(board, moves, ai_type, max_time):
     if ai_type == "mcts":
       best_move = mcts_move(board, max_time)
     elif ai_type == "minimax":
-      best_move = minimax_move(board, max_depth=max_time)  # Assume max_depth correlates with max_time
+      best_move = minimax_move(board, 4, max_time)  # Assume max_depth correlates with max_time
     elif ai_type == "stockfish":
       sf.set_fen_position(board.fen())
       sf.set_depth(max_time)  # Set Stockfish depth
@@ -83,7 +83,7 @@ def play_ai_game(board, moves, ai_type, max_time):
   avg_move_time = total_move_time / move_index if move_index > 0 else 0
   print(f'AI wins! Average time per move: {avg_move_time:.2f} seconds')
 
-def create_game(fen, moves, play_mode="human", ai_type=None, max_time=3):
+def create_game(fen, moves, play_mode="human", ai_type=None, max_time=10):
   board = ChessBoard(fen)  # Use ChessBoard instead of chess.Board
 
   if play_mode == "human":

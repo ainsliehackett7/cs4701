@@ -19,35 +19,27 @@ def get_database():
 
 def get_max_time_for_puzzle(elo_rating):
   if elo_rating < 1500:
-    return 2  # Less time for easier puzzles
+    return 10  # Less time for easier puzzles
   elif elo_rating > 2000:
-    return 5  # More time for harder puzzles
-  return 3  # Default time
+    return 15  # More time for harder puzzles
+  return 10  # Default time
 
-def run_evaluation_and_plot():
-  # Select a random subset of puzzles (e.g., 100 puzzles)
-  num_puzzles_to_evaluate = 100
-  selected_puzzles = random.sample(puzzles_db, num_puzzles_to_evaluate)
+def run_evaluation_and_plot(num_puzzles_to_evaluate=30):
+    selected_puzzles = random.sample(puzzles_db, num_puzzles_to_evaluate)
 
-  # Evaluate each AI on the selected subset of puzzles
-  mcts_results = evaluate_ai(selected_puzzles, "mcts")
-  minimax_results = evaluate_ai(selected_puzzles, "minimax")
-  stockfish_results = evaluate_ai(selected_puzzles, "stockfish")
+    # Evaluate and plot success rates across rating classes
+    plot_success_rate_comparisons(selected_puzzles)
 
-  # Plot the results
-  plot_results(mcts_results, "MCTS AI")
-  plot_results(minimax_results, "Minimax AI")
-  plot_results(stockfish_results, "Stockfish AI")
-  plt.xlabel("Puzzle ELO")
-  plt.ylabel("Success Rate")
-  plt.legend()
-  plt.show()
+    # Evaluate and plot Minimax performance at different depths
+    depth_range = range(2, 7) # {2,3,4,5,6}
+    depth_results = evaluate_minimax_at_different_depths(selected_puzzles, depth_range)
+    plot_depth_results(depth_results)
 
-def test_ai_on_puzzle(ai_type, puzzle_fen, expected_move, max_time):
+def test_ai_on_puzzle(ai_type, puzzle_fen, expected_moves, max_time, max_depth=4):
   board = chess.Board(puzzle_fen)
 
   # Apply the opponent's first move (assuming it's always correct)
-  opponent_move = chess.Move.from_uci(expected_move.split()[0])
+  opponent_move = chess.Move.from_uci(expected_moves.split()[0])
   if opponent_move in board.legal_moves:
     board.push(opponent_move)
   else:
@@ -58,7 +50,7 @@ def test_ai_on_puzzle(ai_type, puzzle_fen, expected_move, max_time):
   if ai_type == "mcts":
     ai_move = mcts_move(board, max_time)
   elif ai_type == "minimax":
-    ai_move = minimax_move(board, max_time)
+    ai_move = minimax_move(board, max_depth, max_time)
   elif ai_type == "stockfish":
     sf.set_fen_position(board.fen())
     sf.set_depth(max_time)
@@ -67,18 +59,80 @@ def test_ai_on_puzzle(ai_type, puzzle_fen, expected_move, max_time):
     raise ValueError("Unknown AI type")
 
   # Check if AI's move matches the expected solution move
-  return str(ai_move) == expected_move.split()[1]  # Compare to the second move in the solution
+  return str(ai_move) == expected_moves.split()[1]  # Compare to the second move in the solution
 
-def evaluate_ai(puzzles_db, ai_type):
-  results = {"puzzle_rating": [], "success": []}
+def evaluate_ai(puzzles_db, ai_type, max_depth=4, group_by_rating=False):
+  rating_ranges = [(0, 1000), (1001, 1500), (1501, 2000), (2001, float('inf'))]
+  results = {range: {"puzzle_rating": [], "success": []} for range in rating_ranges} if group_by_rating else {"puzzle_rating": [], "success": []}
+
   for puzzle in puzzles_db:
-    max_time_for_ai = get_max_time_for_puzzle(puzzle["Rating"])  # Use "Rating" instead of "elo"
-    success = test_ai_on_puzzle(ai_type, puzzle["FEN"], puzzle["Moves"].split()[1], max_time_for_ai)  # Assuming second move is the solution
-    results["puzzle_rating"].append(puzzle["Rating"])
-    results["success"].append(success)
+    puzzle_rating = puzzle["Rating"]
+    rating_range = categorize_rating(puzzle_rating)
+    success = test_ai_on_puzzle(ai_type, puzzle["FEN"], puzzle["Moves"], get_max_time_for_puzzle(puzzle_rating), max_depth)
+    results[rating_range]["puzzle_rating"].append(puzzle_rating)
+    results[rating_range]["success"].append(success)
+
   return results
 
+def categorize_rating(puzzle_rating):
+  if puzzle_rating <= 1000:  # Ratings up to 1000
+    return (0, 1000)
+  elif puzzle_rating <= 1500:  # Ratings from 1001 to 1500
+    return (1001, 1500)
+  elif puzzle_rating <= 2000:  # Ratings from 1501 to 2000
+    return (1501, 2000)
+  else:  # Ratings above 2000
+    return (2001, float('inf'))
 
-# Plotting the results
-def plot_results(results, label):
-  plt.scatter(results["puzzle_rating"], results["success"], label=label)
+def evaluate_minimax_at_different_depths(puzzles_db, depth_range):
+    depth_results = {}
+    for depth in depth_range:
+        results = evaluate_ai(puzzles_db, "minimax", max_depth=depth)
+        success_rate = sum(results["success"]) / len(results["success"]) * 100
+        depth_results[depth] = success_rate
+    return depth_results
+
+def plot_depth_results(depth_results):
+    plt.figure(figsize=(10, 6))
+    plt.plot(list(depth_results.keys()), list(depth_results.values()), marker='o', linestyle='-')
+    plt.xlabel("Max Depth")
+    plt.ylabel("Success Rate (%)")
+    plt.title("Minimax AI Performance at Different Depths")
+    plt.grid(True)
+    plt.show()
+
+def plot_success_rate_comparisons(selected_puzzles):
+    ai_types = ["stockfish", "minimax", "mcts"]  # Add "mcts" if needed
+    rating_ranges = [(0, 1000), (1001, 1500), (1501, 2000), (2001, float('inf'))]
+
+    for ai_type in ai_types:
+        print(f"Running {ai_type} AI...")
+        success_rates = []
+        results_by_rating = evaluate_ai(selected_puzzles, ai_type, group_by_rating=True)
+        for puzzle_rating in range(len(rating_ranges)):
+            rating_range = rating_ranges[puzzle_rating]
+
+            # Calculate the success rate for each rating range
+            if rating_range in results_by_rating:
+                success_rate = sum(results_by_rating[rating_range]["success"]) / len(results_by_rating[rating_range]["success"]) * 100 if results_by_rating[rating_range]["success"] else 0
+            else:
+                success_rate = 0
+            success_rates.append(success_rate)
+
+        rating_labels = [f"{r[0]}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in rating_ranges]
+        plt.plot(rating_labels, success_rates, label=f"{ai_type} AI")
+
+    plt.xlabel("Puzzle Rating Range")
+    plt.ylabel("Success Rate (%)")
+    plt.legend()
+    plt.show()
+
+def evaluate_minimax_at_different_depths(puzzles_db, depth_range):
+    depth_results = {}
+    for depth in depth_range:
+        print(f'minimax @ depth {depth}')
+        results = evaluate_ai(puzzles_db, "minimax", max_depth=depth, group_by_rating=False)
+        success_rate = sum(results["success"]) / len(results["success"]) * 100
+        depth_results[depth] = success_rate
+    return depth_results
+
